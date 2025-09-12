@@ -71,9 +71,6 @@ def imagenEscalaDoble(imagen):
 
     return imagenDoble
 
-def iniciaProblema5():
-
-
 if __name__ == "__main__":
     valor = input(int)
     if valor ==1 :
