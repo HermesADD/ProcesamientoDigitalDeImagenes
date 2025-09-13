@@ -23,7 +23,7 @@ def iniciaProblema1():
         plt.axis('on')
         plt.title(f"Escala {escala}")
         escala = escala//2
-    
+
     # Importante: una sola llamada
     plt.show()
 
@@ -40,7 +40,7 @@ def imagenEscalaMitad(imagen):
     return imagenEscalada
 
 def iniciaProblema3():
-    img64 = io.imread("../imagenes/mandala64.jpg", 'r')
+    img64 = io.imread("../imagenes/panda64.png", 'r')
     escala = 64
 
     imgs = [img64]
@@ -71,9 +71,47 @@ def imagenEscalaDoble(imagen):
 
     return imagenDoble
 
+def iniciaProblema5():
+    img256 = io.imread("../imagenes/Panda.PNG",'r')
+
+    nivel = 2
+    imgs = [img256]
+    for _ in range(4):
+        imgs.append(imagenIntensidad(imgs[-1], nivel))
+        nivel  = nivel * 2
+
+    escala = 256
+    for i, im in enumerate(imgs, 1):
+        plt.figure(i)
+        plt.imshow(im)
+        plt.axis('on')
+        plt.title(f"Escala de grises {escala}")
+        escala = escala//2
+
+    # Importante: una sola llamada
+    plt.show()
+
+def imagenIntensidad(imagen, nivel):
+    y, x = imagen.shape
+    imagenNueva = np.ones((y,x), dtype=np.uint8)
+
+    print(y,x)
+    print(nivel)
+    for j in range(0, y):
+        for i in range(0, x):
+            px = imagen[j][i]
+            px = px - (px % nivel)
+            
+            imagenNueva[j][i] = px
+    return imagenNueva
+
 if __name__ == "__main__":
-    valor = input(int)
-    if valor ==1 :
+    valor  = input()
+    if valor == "1":
         iniciaProblema1()
-    else:
+    elif valor == "3":
         iniciaProblema3()
+    elif valor == "5":
+        iniciaProblema5()
+    else:
+        print("Valor no encontrado")
