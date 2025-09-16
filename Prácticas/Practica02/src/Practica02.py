@@ -10,8 +10,13 @@ import numpy as np
 from skimage import io
 
 def iniciaProblema1():
-    img1024 = io.imread("../imagenes/Panda.PNG",'r')
+    img = io.imread("../imagenes/Atleta.png")
 
+    if img.ndim == 3:
+        img1024 = img[:, :, 0]  
+    else:  # Si ya es en escala de grises
+        img1024 = img  
+        
     escala = 1024
     imgs = [img1024]
     for _ in range(4):
@@ -35,12 +40,12 @@ def imagenEscalaMitad(imagen):
     print(y,x)
     print(imagenEscalada.shape)
     for j in range (0,y,2):
-        for i in range(0,x,):
+        for i in range(0,x,2):
             imagenEscalada[j//2][i//2]= imagen[j][i]
     return imagenEscalada
 
 def iniciaProblema3():
-    img64 = io.imread("../imagenes/panda64.png", 'r')
+    img64 = io.imread("../imagenes/Atleta64.png")
     escala = 64
 
     imgs = [img64]
@@ -72,8 +77,12 @@ def imagenEscalaDoble(imagen):
     return imagenDoble
 
 def iniciaProblema5():
-    img256 = io.imread("../imagenes/Panda.PNG",'r')
-
+    img = io.imread("../imagenes/Atleta.png")
+    if img.ndim == 3:
+        img256 = img[:, :, 0]  
+    else:  # Si ya es en escala de grises
+        img256 = img
+          
     nivel = 2
     imgs = [img256]
     for _ in range(4):
