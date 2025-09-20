@@ -1,0 +1,23 @@
+# Archivos compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de entorno
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Archivos de Jupyter
+.ipynb_checkpoints
+
+# Archivos de configuración de editores
+.vscode/
+.idea/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
