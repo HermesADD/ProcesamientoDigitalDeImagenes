@@ -18,7 +18,7 @@ Descripción:
 """
 import os
 import sys
-import EscalarImagen
+import EscalarMitad
 import EscalarDoble
 import EscalarGrises
 import Adyacencias
@@ -72,7 +72,7 @@ def ejecutarOpcion(opcion):
     - "0": Finaliza el programa
     """
     if opcion == "1":
-        EscalarImagen.iniciaProblema()
+        EscalarMitad.iniciaProblema()
     elif opcion == "2":
         EscalarDoble.iniciaProblema()
     elif opcion == "3":
