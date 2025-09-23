@@ -82,7 +82,7 @@ def iniciaProblema(ruta_imagen: str="../imagenes/Atleta.png"):
           
     nivel = 2
     imgs = [img256]
-    for _ in range(4):
+    for _ in range(7):
         imgs.append(imagenIntensidad(imgs[-1], nivel))
         nivel  = nivel * 2
 
