@@ -266,8 +266,9 @@ def ecualizar_histograma(imagen: np.ndarray) -> np.ndarray:
     y, x = imagen.shape
     total_pixeles = y * x
 
-    histo, _ = np.histogram(imagen.flatten(), bins=256, range=[0, 256])
-    
+    hist_dict = histograma(imagen)
+
+    histo = np.array([hist_dict[i] for i in range(256)])
     # Calcular probabilidades
     probabilidad = histo / total_pixeles
     
