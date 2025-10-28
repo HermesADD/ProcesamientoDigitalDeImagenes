@@ -362,9 +362,9 @@ def laplaciano45(imagen: np.ndarray) -> np.ndarray:
     direcciones, especialmente diagonales.
     
     Kernel (8-conectividad):
-    [ 1  0  1]
-    [ 0 -8  0]
-    [ 1  0  1]
+    [ 1  1  1]
+    [ 1 -8  1]
+    [ 1  1  1]
     
     También conocido como Laplaciano diagonal o Laplaciano isotrópico.
     
@@ -375,9 +375,9 @@ def laplaciano45(imagen: np.ndarray) -> np.ndarray:
         np.ndarray: Imagen del Laplaciano (float64, puede tener valores negativos).
     """
 
-    kernel = np.array([[1, 0, 1],
-                       [0, -8, 0],
-                       [1, 0, 1]], dtype=np.float64)
+    kernel = np.array([[1, 1, 1],
+                       [1, -8, 1],
+                       [1, 1, 1]], dtype=np.float64)
     
     resultado = convolucion(imagen.astype(np.float64), kernel)
 
