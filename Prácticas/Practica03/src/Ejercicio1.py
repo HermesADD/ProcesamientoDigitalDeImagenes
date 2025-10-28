@@ -151,12 +151,15 @@ def ecualizar_histograma(imagen: np.ndarray):
     
     return imagen_ecualizada
 
-def ejercicio1():
+def inicia_Ejercicio1():
     rutas = [
-        "../imagenes/mamografia.tiff", 
-        "../imagenes/brain.tiff", "../imagenes/granos.png", 
-        "../imagenes/resonancia.tiff", 
-        "../imagenes/lena.tiff"
+        "../imagenes/lena.tiff",
+        "../imagenes/mamografia.tiff",
+        "../imagenes/brain.tiff",
+        "../imagenes/granos.png",
+        "../imagenes/resonancia.tiff",
+        "../imagenes/tungsten_1.jpg",
+        "../imagenes/tungsten_2.jpg"
     ]
     ruta_imagen = random.choice(rutas)
     print("Rango de valores y tipo de dato de la imagen seleccionada:")
@@ -199,9 +202,3 @@ def ejercicio1():
     mostrar_imagen_e_histograma(imagen_gamma_mayor, hist_dict_gamma_mayor, "Potencia γ=2.5 (oscurece)")
     mostrar_imagen_e_histograma(imagen_ecualizada, hist_dict_ecualizada, "Ecualización del Histograma")
     mostrar_comparacion_ecualizacion(imagen, imagen_ecualizada, hist_dict, hist_dict_ecualizada)
-    
-
-    
-
-if __name__ == "__main__":
-    ejercicio1()

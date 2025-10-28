@@ -1,415 +1,396 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage import io, util
-from scipy import ndimage
-from scipy.ndimage import median_filter
-import random
+from skimage import io 
+import random 
 
+def convolucion(imagen, kernel):
+    img_h, img_w = imagen.shape
+    kernel_h, kernel_w = kernel.shape
+     
+    pad_h = kernel_h // 2
+    pad_w = kernel_w // 2
 
-def agregar_ruido_gaussiano(imagen, media=0, sigma=25):
-    """
-    Agrega ruido gaussiano a una imagen
-    """
+    imagen_padded = np.zeros((img_h + 2 * pad_h, img_w + 2 * pad_w))
+    imagen_padded[pad_h:pad_h + img_h, pad_w:pad_w + img_w] = imagen
+
+    resultado = np.zeros_like(imagen, dtype=np.float64)
+
+    for i in range(img_h):
+        for j in range(img_w):
+            region = imagen_padded[i:i + kernel_h, j:j + kernel_w]
+            valor = np.sum(region * kernel)
+            resultado[i, j] = valor
+    
+    return resultado
+
+def agregar_ruido_gaussiano(imagen, media = 0, sigma = 25):
+
     imagen = imagen.astype(np.float64)
+
     ruido = np.random.normal(media, sigma, imagen.shape)
     imagen_ruidosa = imagen + ruido
-    # Recortar valores fuera del rango [0, 255]
     imagen_ruidosa = np.clip(imagen_ruidosa, 0, 255)
+
     return imagen_ruidosa.astype(np.uint8)
 
+def agregar_ruido_sal_pimienta(imagen, probabilidad = 0.05):
 
-def agregar_ruido_sal_pimienta(imagen, cantidad=0.05):
-    """
-    Agrega ruido sal y pimienta a una imagen
-    cantidad: proporción de píxeles afectados (0 a 1)
-    """
     imagen_ruidosa = imagen.copy()
-    # Sal (blanco)
-    num_sal = int(cantidad * imagen.size * 0.5)
-    coords_sal = [np.random.randint(0, i, num_sal) for i in imagen.shape]
+
+    num_sal = int(probabilidad * imagen.size * 0.5)
+    coords_sal = [np.random.randint(0,i,num_sal) for i in imagen.shape]
     imagen_ruidosa[coords_sal[0], coords_sal[1]] = 255
-    
-    # Pimienta (negro)
-    num_pimienta = int(cantidad * imagen.size * 0.5)
-    coords_pimienta = [np.random.randint(0, i, num_pimienta) for i in imagen.shape]
+
+    num_pimienta = int(probabilidad * imagen.size * 0.5)
+    coords_pimienta = [np.random.randint(0,i,num_pimienta) for i in imagen.shape]
     imagen_ruidosa[coords_pimienta[0], coords_pimienta[1]] = 0
-    
+
     return imagen_ruidosa
 
+def filtro_promedio_estandar(imagen, tam):
+    kernel = np.ones((tam, tam)) / (tam * tam)
 
-def filtro_promedio_estandar(imagen, tamano):
-    """
-    Filtro paso bajas promedio estándar
-    """
-    kernel = np.ones((tamano, tamano)) / (tamano * tamano)
-    return ndimage.convolve(imagen.astype(np.float64), kernel).astype(np.uint8)
+    resultado = convolucion(imagen.astype(np.float64), kernel)
+    
+    return np.clip(resultado, 0, 255).astype(np.uint8)
 
-
-def filtro_promedio_ponderado(imagen, tamano):
-    """
-    Filtro paso bajas promedio ponderado (más peso al centro)
-    """
-    if tamano == 3:
+def filtro_promedio_ponderado(imagen, tam):
+    if tam == 3:
         kernel = np.array([[1, 2, 1],
-                          [2, 4, 2],
-                          [1, 2, 1]]) / 16.0
-    elif tamano == 5:
+                           [2, 4, 2],
+                           [1, 2, 1]], dtype= np.float64) / 16.0
+    elif tam == 5:
         kernel = np.array([[1, 2, 3, 2, 1],
                           [2, 4, 6, 4, 2],
                           [3, 6, 9, 6, 3],
                           [2, 4, 6, 4, 2],
-                          [1, 2, 3, 2, 1]]) / 81.0
-    elif tamano == 7:
-        # Kernel gaussiano aproximado
-        kernel = np.ones((tamano, tamano))
-        centro = tamano // 2
-        for i in range(tamano):
-            for j in range(tamano):
+                          [1, 2, 3, 2, 1]], dtype=np.float64) / 81.0
+    elif tam == 7:
+        kernel = np.ones((tam, tam), dtype=np.float64)
+        centro = tam // 2
+        for i in range(tam):
+            for j in range(tam):
                 dist = abs(i - centro) + abs(j - centro)
-                kernel[i, j] = max(1, tamano - dist)
-        kernel = kernel / kernel.sum()
-    else:  # 11x11
-        kernel = np.ones((tamano, tamano))
-        centro = tamano // 2
-        for i in range(tamano):
-            for j in range(tamano):
+                kernel[i, j] = max(1, tam - dist)
+        
+        kernel /= kernel.sum()
+
+    else: 
+        kernel = np.ones((tam, tam), dtype=np.float64)
+        centro = tam // 2
+        for i in range(tam):
+            for j in range(tam):
                 dist = abs(i - centro) + abs(j - centro)
-                kernel[i, j] = max(1, tamano - dist)
+                kernel[i, j] = max(1, tam - dist)
         kernel = kernel / kernel.sum()
-    
-    return ndimage.convolve(imagen.astype(np.float64), kernel).astype(np.uint8)
 
+    resultado = convolucion(imagen.astype(np.float64), kernel)
+    return np.clip(resultado, 0, 255).astype(np.uint8)
 
-def filtro_mediana(imagen, tamano):
-    """
-    Filtro mediana
-    """
-    return median_filter(imagen, size=tamano)
+def filtro_mediana(imagen, tam):
 
+    img_h, img_w = imagen.shape
+    pad = tam // 2
+
+    imagen_padded = np.zeros((img_h + 2 * pad, img_w + 2 * pad))
+    imagen_padded[pad:pad + img_h, pad:pad + img_w] = imagen
+
+    resultado = np.zeros_like(imagen)
+
+    for i in range(img_h):
+        for j in range(img_w):
+            region = imagen_padded[i:i + tam, j:j + tam]
+
+            valores = region.flatten()
+            valores_sort = np.sort(valores)
+            mediana = valores_sort[len(valores_sort) // 2]
+            resultado[i, j] = mediana
+
+    return resultado.astype(np.uint8)
 
 def gradiente_prewitt(imagen):
-    """
-    Operador Prewitt en X, Y y magnitud
-    """
-    # Prewitt X
+
     kernel_x = np.array([[-1, 0, 1],
                         [-1, 0, 1],
-                        [-1, 0, 1]])
+                        [-1, 0, 1]], dtype=np.float64)
     
-    # Prewitt Y
     kernel_y = np.array([[-1, -1, -1],
-                        [0, 0, 0],
-                        [1, 1, 1]])
+                        [0, 0, 0], 
+                        [1, 1, 1]], dtype=np.float64)
     
-    gx = ndimage.convolve(imagen.astype(np.float64), kernel_x)
-    gy = ndimage.convolve(imagen.astype(np.float64), kernel_y)
-    
-    magnitud = np.sqrt(gx**2 + gy**2)
-    magnitud = np.clip(magnitud, 0, 255).astype(np.uint8)
-    
-    return gx.astype(np.uint8), gy.astype(np.uint8), magnitud
+    gx = convolucion(imagen.astype(np.float64), kernel_x)
+    gy = convolucion(imagen.astype(np.float64), kernel_y)
 
+    magnitud = np.zeros_like(gx)
+
+    for i in range(imagen.shape[0]):
+        for j in range(imagen.shape[1]):
+            magnitud[i, j] = np.sqrt(gx[i, j]**2 + gy[i, j]**2)
+
+    gx = np.clip(np.abs(gx), 0, 255).astype(np.uint8)
+    gy = np.clip(np.abs(gy), 0, 255).astype(np.uint8)
+    magnitud = np.clip(magnitud, 0, 255).astype(np.uint8)
+
+    return gx, gy, magnitud
 
 def gradiente_sobel(imagen):
-    """
-    Operador Sobel en X, Y y magnitud
-    """
-    # Sobel X
     kernel_x = np.array([[-1, 0, 1],
                         [-2, 0, 2],
-                        [-1, 0, 1]])
-    
-    # Sobel Y
+                        [-1, 0, 1]], dtype=np.float64)
+   
     kernel_y = np.array([[-1, -2, -1],
                         [0, 0, 0],
-                        [1, 2, 1]])
+                        [1, 2, 1]], dtype=np.float64)
     
-    gx = ndimage.convolve(imagen.astype(np.float64), kernel_x)
-    gy = ndimage.convolve(imagen.astype(np.float64), kernel_y)
+    gx = convolucion(imagen.astype(np.float64), kernel_x)
+    gy = convolucion(imagen.astype(np.float64), kernel_y)
     
-    magnitud = np.sqrt(gx**2 + gy**2)
+    magnitud = np.zeros_like(gx)
+    for i in range(magnitud.shape[0]):
+        for j in range(magnitud.shape[1]):
+            magnitud[i, j] = np.sqrt(gx[i, j]**2 + gy[i, j]**2)
+    
+    gx = np.clip(np.abs(gx), 0, 255).astype(np.uint8)
+    gy = np.clip(np.abs(gy), 0, 255).astype(np.uint8)
     magnitud = np.clip(magnitud, 0, 255).astype(np.uint8)
     
-    return gx.astype(np.uint8), gy.astype(np.uint8), magnitud
+    return gx, gy, magnitud
 
-
-def laplaciano_90(imagen):
-    """
-    Laplaciano isotrópico a 90 grados
-    """
+def laplaciano90(imagen):
+    
     kernel = np.array([[0, 1, 0],
-                      [1, -4, 1],
-                      [0, 1, 0]])
+                       [1, -4, 1],
+                       [0, 1, 0]], dtype=np.float64)
     
-    resultado = ndimage.convolve(imagen.astype(np.float64), kernel)
+    resultado = convolucion(imagen.astype(np.float64), kernel)
+
     return resultado
 
+def laplaciano45(imagen):
 
-def laplaciano_45(imagen):
-    """
-    Laplaciano isotrópico a 45 grados (incluye diagonales)
-    """
-    kernel = np.array([[1, 1, 1],
-                      [1, -8, 1],
-                      [1, 1, 1]])
+    kernel = np.array([[1, 0, 1],
+                       [0, -8, 0],
+                       [1, 0, 1]], dtype=np.float64)
     
-    resultado = ndimage.convolve(imagen.astype(np.float64), kernel)
+    resultado = convolucion(imagen.astype(np.float64), kernel)
+
     return resultado
 
-
-def unsharp_masking(imagen, filtro_blur, tamano):
-    """
-    Filtro Unsharp Masking
-    imagen_sharp = imagen - imagen_blur
-    resultado = imagen + imagen_sharp
-    """
+def unsharp_masking(imagen, filtro_blur, tam):
     if filtro_blur == 'promedio':
-        imagen_blur = filtro_promedio_estandar(imagen, tamano)
-    else:  # ponderado
-        imagen_blur = filtro_promedio_ponderado(imagen, tamano)
+        imagen_blur = filtro_promedio_estandar(imagen, tam)
+    else: 
+        imagen_blur = filtro_promedio_ponderado(imagen, tam)
     
-    # imagen_sharp = imagen - imagen_blur
     imagen_sharp = imagen.astype(np.float64) - imagen_blur.astype(np.float64)
-    
-    # resultado = imagen + imagen_sharp
+
     resultado = imagen.astype(np.float64) + imagen_sharp
     resultado = np.clip(resultado, 0, 255).astype(np.uint8)
-    
-    return resultado
 
+    return resultado    
 
-def mostrar_comparacion(imagenes, titulos, filas=2, cols=4, tam_fig=(16, 8)):
-    """
-    Muestra múltiples imágenes en una cuadrícula
-    """
+def mostrar_comparacion(imagenes, titulos, filas = 2, cols = 4, tam_fig = (16,8)):
+
     fig, axes = plt.subplots(filas, cols, figsize=tam_fig)
     axes = axes.flatten()
-    
+
     for i, (img, titulo) in enumerate(zip(imagenes, titulos)):
         axes[i].imshow(img, cmap='gray')
         axes[i].set_title(titulo, fontsize=10)
         axes[i].axis('off')
-    
-    # Ocultar ejes sobrantes
+
     for i in range(len(imagenes), len(axes)):
         axes[i].axis('off')
-    
+
     plt.tight_layout()
     plt.show()
 
+def ejercicio2a(imagen_sin_ruido, imagen_con_ruido):
+    print(f"\nEjercicio 2a: Filtro Promedio Estándar")
 
-def ejercicio2a_promedio_estandar(imagen_sin_ruido, imagen_con_ruido):
-    """
-    a) Filtros promedio estándar 3x3, 5x5, 7x7, 11x11
-    """
-    print("=== Ejercicio 2a: Filtro Promedio Estándar ===")
-    
     tamanos = [3, 5, 7, 11]
     imagenes = []
-    titulos = []
-    
-    # Sin ruido
+    titulos = []   
+
     imagenes.append(imagen_sin_ruido)
     titulos.append("Original sin ruido")
-    
+
     for tam in tamanos:
-        img_filtrada = filtro_promedio_estandar(imagen_sin_ruido, tam)
-        imagenes.append(img_filtrada)
-        titulos.append(f"Sin ruido {tam}x{tam}")
-    
-    # Con ruido
+        print(f"  Aplicando filtro: {tam}x{tam} a imagen sin ruido")
+        imagen_filtrada = filtro_promedio_estandar(imagen_sin_ruido, tam)
+        imagenes.append(imagen_filtrada)
+        titulos.append(f"Filtro {tam}x{tam} sin ruido")
+
     imagenes.append(imagen_con_ruido)
     titulos.append("Original con ruido")
-    
+
     for tam in tamanos:
-        img_filtrada = filtro_promedio_estandar(imagen_con_ruido, tam)
-        imagenes.append(img_filtrada)
-        titulos.append(f"Con ruido {tam}x{tam}")
-    
-    mostrar_comparacion(imagenes[:5], titulos[:5], filas=1, cols=5, tam_fig=(20, 4))
-    mostrar_comparacion(imagenes[5:], titulos[5:], filas=1, cols=5, tam_fig=(20, 4))
+        print(f"  Aplicando filtro: {tam}x{tam} a imagen con ruido")
+        imagen_filtrada = filtro_promedio_estandar(imagen_con_ruido, tam)
+        imagenes.append(imagen_filtrada)
+        titulos.append(f"Filtro {tam}x{tam} con ruido")
 
+    mostrar_comparacion(imagenes[:5], titulos[:5], filas=1, cols=5, tam_fig=(20,4))
+    mostrar_comparacion(imagenes[5:], titulos[5:], filas=1, cols=5, tam_fig=(20,4))
 
-def ejercicio2b_promedio_ponderado(imagen_sin_ruido, imagen_con_ruido):
-    """
-    b) Filtros promedio ponderado 3x3, 5x5, 7x7, 11x11
-    """
-    print("=== Ejercicio 2b: Filtro Promedio Ponderado ===")
-    
+def ejercicio2b(imagen_sin_ruido, imagen_con_ruido):
+    print(f"\nEjercicio 2b: Filtro Promedio Ponderado")
     tamanos = [3, 5, 7, 11]
     imagenes = []
-    titulos = []
-    
-    # Sin ruido
+    titulos = []   
+
     imagenes.append(imagen_sin_ruido)
     titulos.append("Original sin ruido")
-    
+
     for tam in tamanos:
-        img_filtrada = filtro_promedio_ponderado(imagen_sin_ruido, tam)
-        imagenes.append(img_filtrada)
-        titulos.append(f"Sin ruido {tam}x{tam}")
-    
-    # Con ruido
+        print(f"  Aplicando filtro: {tam}x{tam} a imagen sin ruido")
+        imagen_filtrada = filtro_promedio_ponderado(imagen_sin_ruido, tam)
+        imagenes.append(imagen_filtrada)
+        titulos.append(f"Filtro {tam}x{tam} sin ruido")
+
     imagenes.append(imagen_con_ruido)
-    titulos.append("Original con ruido")
-    
+    titulos.append("Original con ruido")   
+
     for tam in tamanos:
-        img_filtrada = filtro_promedio_ponderado(imagen_con_ruido, tam)
-        imagenes.append(img_filtrada)
-        titulos.append(f"Con ruido {tam}x{tam}")
+        print(f"  Aplicando filtro: {tam}x{tam} a imagen con ruido")
+        imagen_filtrada = filtro_promedio_ponderado(imagen_con_ruido, tam)
+        imagenes.append(imagen_filtrada)
+        titulos.append(f"Filtro {tam}x{tam} con ruido")
     
-    mostrar_comparacion(imagenes[:5], titulos[:5], filas=1, cols=5, tam_fig=(20, 4))
-    mostrar_comparacion(imagenes[5:], titulos[5:], filas=1, cols=5, tam_fig=(20, 4))
+    mostrar_comparacion(imagenes[:5], titulos[:5], filas=1, cols=5, tam_fig=(20,4))
+    mostrar_comparacion(imagenes[5:], titulos[5:], filas=1, cols=5, tam_fig=(20,4))
 
+def ejercicio2c(imagen_sin_ruido):
+    print(f"\nEjercicio 2c: Filtro Mediana con ruido sal y pimienta y gaussiano")
 
-def ejercicio2c_mediana(imagen_sin_ruido):
-    """
-    c) Filtro mediana con ruido sal y pimienta y gaussiano
-    """
-    print("=== Ejercicio 2c: Filtro Mediana ===")
-    
-    # Ruido sal y pimienta
-    img_sal_pimienta = agregar_ruido_sal_pimienta(imagen_sin_ruido, cantidad=0.05)
-    
-    # Ruido gaussiano
-    img_gaussiano = agregar_ruido_gaussiano(imagen_sin_ruido, sigma=25)
-    
+    print("Apicando ruido sal y pimienta a la imagen...")
+    img_sal_pimienta = agregar_ruido_sal_pimienta(imagen_sin_ruido, probabilidad=0.05)
+
+    print("Aplicando ruido gaussiano a la imagen...")
+    img_gaussiano = agregar_ruido_gaussiano(imagen_sin_ruido)
+
     tamanos = [3, 5, 7, 11]
-    
-    # Sal y pimienta
+
+    print("Filtrando imagen con ruido sal y pimienta...")
     imagenes_sp = [imagen_sin_ruido, img_sal_pimienta]
-    titulos_sp = ["Original", "Sal y pimienta"]
-    
-    for tam in tamanos:
-        img_filtrada = filtro_mediana(img_sal_pimienta, tam)
-        imagenes_sp.append(img_filtrada)
-        titulos_sp.append(f"Mediana {tam}x{tam}")
-    
-    mostrar_comparacion(imagenes_sp, titulos_sp, filas=2, cols=3, tam_fig=(15, 10))
-    
-    # Gaussiano
-    imagenes_g = [imagen_sin_ruido, img_gaussiano]
-    titulos_g = ["Original", "Gaussiano"]
-    
-    for tam in tamanos:
-        img_filtrada = filtro_mediana(img_gaussiano, tam)
-        imagenes_g.append(img_filtrada)
-        titulos_g.append(f"Mediana {tam}x{tam}")
-    
-    mostrar_comparacion(imagenes_g, titulos_g, filas=2, cols=3, tam_fig=(15, 10))
+    titulos_sp = ["Original sin ruido", "Imagen con ruido sal y pimienta"]
 
-
-def ejercicio2d_gradientes(imagen_sin_ruido, imagen_con_ruido):
-    """
-    d) Detectores de borde: Prewitt y Sobel
-    """
-    print("=== Ejercicio 2d: Detectores de Borde ===")
+    for tam in tamanos:
+        print(f"  Aplicando filtro: {tam}x{tam} a imagen con ruido sal y pimienta")
+        imagen_filtrada = filtro_mediana(img_sal_pimienta, tam)
+        imagenes_sp.append(imagen_filtrada)
+        titulos_sp.append(f"Filtro mediana {tam}x{tam}")
     
-    # Prewitt sin ruido
+    mostrar_comparacion(imagenes_sp, titulos_sp, filas=2, cols=3, tam_fig=(15,10))
+
+    print("Filtrando imagen con ruido gaussiano...")
+    imagenes_gauss = [imagen_sin_ruido, img_gaussiano]
+    titulos_gauss = ["Original sin ruido", "Imagen con ruido gaussiano"]
+
+    for tam in tamanos:
+        print(f"  Aplicando filtro: {tam}x{tam} a imagen con ruido gaussiano")
+        imagen_filtrada = filtro_mediana(img_gaussiano, tam)
+        imagenes_gauss.append(imagen_filtrada)
+        titulos_gauss.append(f"Filtro mediana {tam}x{tam}")
+    
+    mostrar_comparacion(imagenes_gauss, titulos_gauss, filas=2, cols=3, tam_fig=(15,10))
+
+def ejercicio2d(imagen_sin_ruido, imagen_con_ruido):
+    print(f"\nEjercicio 2d: Detectores de bordes Prewitt y Sobel")
+
+    print("Aplicando gradiente Prewitt a imagen sin ruido...")
     px, py, pmag = gradiente_prewitt(imagen_sin_ruido)
     imagenes_p = [imagen_sin_ruido, px, py, pmag]
-    titulos_p = ["Original sin ruido", "Prewitt X", "Prewitt Y", "Prewitt Magnitud"]
-    mostrar_comparacion(imagenes_p, titulos_p, filas=1, cols=4, tam_fig=(16, 4))
-    
-    # Sobel sin ruido
+    titulos_p = ["Original sin ruido", "Gradiente Prewitt X", "Gradiente Prewitt Y", "Magnitud Prewitt"]
+    mostrar_comparacion(imagenes_p, titulos_p, filas=1, cols=4, tam_fig=(16,4))
+
+    print("Aplicando gradiente Sobel a imagen sin ruido...")
     sx, sy, smag = gradiente_sobel(imagen_sin_ruido)
-    imagenes_s = [imagen_sin_ruido, sx, sy, smag]
-    titulos_s = ["Original sin ruido", "Sobel X", "Sobel Y", "Sobel Magnitud"]
-    mostrar_comparacion(imagenes_s, titulos_s, filas=1, cols=4, tam_fig=(16, 4))
-    
-    # Prewitt con ruido
+    imagenes_s = [imagen_sin_ruido, sx, sy, smag]       
+    titulos_s = ["Original sin ruido", "Gradiente Sobel X", "Gradiente Sobel Y", "Magnitud Sobel"]
+    mostrar_comparacion(imagenes_s, titulos_s, filas=1, cols=4, tam_fig=(16,4))
+
+    print("Aplicando gradiente Prewitt a imagen con ruido...")
     px_r, py_r, pmag_r = gradiente_prewitt(imagen_con_ruido)
     imagenes_pr = [imagen_con_ruido, px_r, py_r, pmag_r]
-    titulos_pr = ["Original con ruido", "Prewitt X", "Prewitt Y", "Prewitt Magnitud"]
-    mostrar_comparacion(imagenes_pr, titulos_pr, filas=1, cols=4, tam_fig=(16, 4))
-    
-    # Sobel con ruido
+    titulos_pr = ["Original con ruido", "Gradiente Prewitt X", "Gradiente Prewitt Y", "Magnitud Prewitt"]
+    mostrar_comparacion(imagenes_pr, titulos_pr, filas=1, cols=4, tam_fig=(16,4))
+
+    print("Aplicando gradiente Sobel a imagen con ruido...")
     sx_r, sy_r, smag_r = gradiente_sobel(imagen_con_ruido)
-    imagenes_sr = [imagen_con_ruido, sx_r, sy_r, smag_r]
-    titulos_sr = ["Original con ruido", "Sobel X", "Sobel Y", "Sobel Magnitud"]
-    mostrar_comparacion(imagenes_sr, titulos_sr, filas=1, cols=4, tam_fig=(16, 4))
+    imagenes_sr = [imagen_con_ruido, sx_r, sy_r, smag_r]       
+    titulos_sr = ["Original con ruido", "Gradiente Sobel X", "Gradiente Sobel Y", "Magnitud Sobel"]
+    mostrar_comparacion(imagenes_sr, titulos_sr, filas=1, cols=4, tam_fig=(16,4))
 
+def ejercicio2e(imagen_sin_ruido, imagen_con_ruido):
+    print(f"\nEjercicio 2e: Filtro Laplaciano y Unsharp Masking")
+    print("Difuminando imágenes con filtro 5x5...")
+    img_difuminada = filtro_promedio_ponderado(imagen_sin_ruido, tam=5)
+    img_con_ruido_difuminada = filtro_promedio_ponderado(imagen_con_ruido, tam=5)
 
-def ejercicio2e_laplaciano(imagen_sin_ruido, imagen_con_ruido):
-    """
-    e) Laplaciano 45° y 90°, y Unsharp masking
-    """
-    print("=== Ejercicio 2e: Laplaciano y Unsharp Masking ===")
-    
-    # Difuminar imágenes con filtro 5x5
-    img_difuminada = filtro_promedio_estandar(imagen_sin_ruido, 5)
-    img_ruido_difuminada = filtro_promedio_estandar(imagen_con_ruido, 5)
-    
-    # Laplaciano 90 grados
-    lap90 = laplaciano_90(imagen_sin_ruido)
+    print("Aplicando Laplaciano 90º")
+    lap90 = laplaciano90(img_difuminada)
     lap90_norm = np.clip((lap90 - lap90.min()) * 255 / (lap90.max() - lap90.min()), 0, 255).astype(np.uint8)
     realce90 = np.clip(imagen_sin_ruido.astype(np.float64) - lap90, 0, 255).astype(np.uint8)
-    
-    # Laplaciano 45 grados
-    lap45 = laplaciano_45(imagen_sin_ruido)
+
+    print("Aplicando Laplaciano 45º")
+    lap45 = laplaciano45(imagen_sin_ruido)
     lap45_norm = np.clip((lap45 - lap45.min()) * 255 / (lap45.max() - lap45.min()), 0, 255).astype(np.uint8)
     realce45 = np.clip(imagen_sin_ruido.astype(np.float64) - lap45, 0, 255).astype(np.uint8)
-    
+
     imagenes_lap = [imagen_sin_ruido, lap90_norm, realce90, lap45_norm, realce45]
-    titulos_lap = ["Original", "Laplaciano 90°", "Realce 90°", "Laplaciano 45°", "Realce 45°"]
-    mostrar_comparacion(imagenes_lap, titulos_lap, filas=1, cols=5, tam_fig=(20, 4))
-    
-    # Unsharp masking - Sin ruido
-    print("\nUnsharp masking - Imagen sin ruido:")
+    titulos_lap = ["Original", "Laplaciano 90º", "Realce Laplaciano 90º", "Laplaciano 45º", "Realce Laplaciano 45º"]
+    mostrar_comparacion(imagenes_lap, titulos_lap, filas=1, cols=5, tam_fig=(20,4))
+
+    print("Aplicando Unsharp Masking a imagen sin ruido...")
     unsharp_3_prom = unsharp_masking(img_difuminada, 'promedio', 3)
     unsharp_7_prom = unsharp_masking(img_difuminada, 'promedio', 7)
     unsharp_3_pond = unsharp_masking(img_difuminada, 'ponderado', 3)
     unsharp_7_pond = unsharp_masking(img_difuminada, 'ponderado', 7)
-    
+
     imagenes_um = [img_difuminada, unsharp_3_prom, unsharp_7_prom, unsharp_3_pond, unsharp_7_pond]
-    titulos_um = ["Difuminada 5x5", "Unsharp Prom 3x3", "Unsharp Prom 7x7", 
-                  "Unsharp Pond 3x3", "Unsharp Pond 7x7"]
-    mostrar_comparacion(imagenes_um, titulos_um, filas=1, cols=5, tam_fig=(20, 4))
-    
-    # Unsharp masking - Con ruido
-    print("\nUnsharp masking - Imagen con ruido:")
-    unsharp_3_prom_r = unsharp_masking(img_ruido_difuminada, 'promedio', 3)
-    unsharp_7_prom_r = unsharp_masking(img_ruido_difuminada, 'promedio', 7)
-    unsharp_3_pond_r = unsharp_masking(img_ruido_difuminada, 'ponderado', 3)
-    unsharp_7_pond_r = unsharp_masking(img_ruido_difuminada, 'ponderado', 7)
-    
-    imagenes_um_r = [img_ruido_difuminada, unsharp_3_prom_r, unsharp_7_prom_r, 
-                     unsharp_3_pond_r, unsharp_7_pond_r]
-    titulos_um_r = ["Ruido difum 5x5", "Unsharp Prom 3x3", "Unsharp Prom 7x7", 
-                    "Unsharp Pond 3x3", "Unsharp Pond 7x7"]
-    mostrar_comparacion(imagenes_um_r, titulos_um_r, filas=1, cols=5, tam_fig=(20, 4))
+    titulos_um = ["Original", "Unsharp Masking Promedio 3x3", "Unsharp Masking Promedio 7x7",
+                  "Unsharp Masking Ponderado 3x3", "Unsharp Masking Ponderado 7x7"]
+    mostrar_comparacion(imagenes_um, titulos_um, filas=1, cols=5, tam_fig=(20,4))
 
+    print("Aplicando Unsharp Masking a imagen con ruido...")
+    unsharp_3_prom_r = unsharp_masking(img_con_ruido_difuminada, 'promedio', 3)
+    unsharp_7_prom_r = unsharp_masking(img_con_ruido_difuminada, 'promedio', 7)     
+    unsharp_3_pond_r = unsharp_masking(img_con_ruido_difuminada, 'ponderado', 3)
+    unsharp_7_pond_r = unsharp_masking(img_con_ruido_difuminada , 'ponderado', 7)
+    imagenes_um_r = [img_con_ruido_difuminada, unsharp_3_prom_r, unsharp_7_prom_r, unsharp_3_pond_r, unsharp_7_pond_r]
+    titulos_um_r = ["Original con ruido", "Unsharp Masking Promedio 3x3", "Unsharp Masking Promedio 7x7",
+                    "Unsharp Masking Ponderado 3x3", "Unsharp Masking Ponderado 7x7"]
+    mostrar_comparacion(imagenes_um_r, titulos_um_r, filas=1, cols=5, tam_fig=(20,4))
 
-def main():
-    # Cargar imagen
+def inicia_Ejercicio2():
     rutas = [
         "../imagenes/lena.tiff",
         "../imagenes/mamografia.tiff",
         "../imagenes/brain.tiff",
-        "../imagenes/granos.png"
+        "../imagenes/granos.png",
+        "../imagenes/resonancia.tiff",
+        "../imagenes/tungsten_1.jpg",
+        "../imagenes/tungsten_2.jpg"
     ]
-    
+
     ruta = random.choice(rutas)
-    print(f"Imagen seleccionada: {ruta}\n")
-    
+    print(f"Imagen seleccionada: {ruta}")
+
     imagen_sin_ruido = io.imread(ruta)
+
     if imagen_sin_ruido.dtype != np.uint8:
         imagen_sin_ruido = ((imagen_sin_ruido - imagen_sin_ruido.min()) / 
                            (imagen_sin_ruido.max() - imagen_sin_ruido.min()) * 255).astype(np.uint8)
     
-    # Generar imagen con ruido gaussiano
     imagen_con_ruido = agregar_ruido_gaussiano(imagen_sin_ruido, sigma=25)
-    
-    # Ejecutar ejercicios
-    ejercicio2a_promedio_estandar(imagen_sin_ruido, imagen_con_ruido)
-    ejercicio2b_promedio_ponderado(imagen_sin_ruido, imagen_con_ruido)
-    ejercicio2c_mediana(imagen_sin_ruido)
-    ejercicio2d_gradientes(imagen_sin_ruido, imagen_con_ruido)
-    ejercicio2e_laplaciano(imagen_sin_ruido, imagen_con_ruido)
-    
-    print("\n✓ Ejercicio 2 completado")
+
+    ejercicio2a(imagen_sin_ruido, imagen_con_ruido)
+    ejercicio2b(imagen_sin_ruido, imagen_con_ruido)
+    ejercicio2c(imagen_sin_ruido)
+    ejercicio2d(imagen_sin_ruido, imagen_con_ruido)
+    ejercicio2e(imagen_sin_ruido, imagen_con_ruido)
 
 
-if __name__ == "__main__":
-    main()   
-    
+
+
