@@ -7,24 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
 
-
-def ruido_gaussiano(imagen: np.ndarray, media: float = 0, std: float = 25):
-    """
-    Agrega ruido gaussiano a la imagen.
-    
-    Args:
-        imagen (np.ndarray): Imagen original
-        media (float): Media del ruido gaussiano
-        std (float): Desviación estándar del ruido
-    
-    Returns:
-        np.ndarray: Imagen con ruido gaussiano
-    """
-    ruido = np.random.normal(media, std, imagen.shape)
-    imagen_ruidosa = imagen + ruido
-    return np.clip(imagen_ruidosa, 0, 255).astype(np.uint8)
-
-
 def ruido_sal_pimienta(imagen: np.ndarray, probabilidad: float = 0.05):
     """
     Agrega ruido sal y pimienta a la imagen.
@@ -351,24 +333,3 @@ def iniciaEjercicio(ruta_imagen: str = "../imagenes/saturn_bw.tif"):
     ejercicio2a_paso_bajas(imagen, imagenSP, "Sal y Pimienta")
     
     ejercicio2b_paso_altas(imagen, imagenSP, "Sal y Pimienta")
-
-    #print("\nGenerando imagen con ruido gaussiano...")
-    #imagenG = ruido_gaussiano(imagen)
-
-    #fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-    #fig.suptitle('Imágenes de Entrada', fontsize=14, fontweight='bold')
-    
-    #axes[0].imshow(imagen, cmap='gray')
-    #axes[0].set_title('Imagen sin ruido')
-    #axes[0].axis('off')
-    
-    #axes[1].imshow(imagenG, cmap='gray')
-    #axes[1].set_title('Imagen con ruido gaussiano')
-    #axes[1].axis('off')
-    
-    #plt.tight_layout()
-    #plt.show()
-
-    #ejercicio2a_paso_bajas(imagen, imagenG, "Gaussiano")
-    
-    #ejercicio2b_paso_altas(imagen, imagenG, "Gaussiano")
