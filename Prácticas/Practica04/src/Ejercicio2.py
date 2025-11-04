@@ -256,17 +256,17 @@ def ejercicio2b_paso_altas(imagen_sin_ruido, imagen_con_ruido, tipo):
     plt.tight_layout()
     plt.show()
     
-    print("\nPrueba 2: Variando n (orden) con D0=30")
+    print("\nPrueba 2: Variando n (orden) con D0= 50")
     
     fig2, axes2 = plt.subplots(2, 3, figsize=(16, 12))
-    fig2.suptitle('Filtro Paso Altas Butterworth - Variando n (D0=30) Sin Ruido', 
+    fig2.suptitle('Filtro Paso Altas Butterworth - Variando n (D0=50) Sin Ruido', 
                   fontsize=12, fontweight='bold')
     
     for idx, n in enumerate(valores_n):
-        img_filtrada_sin, filtro_H = paso_altas_butterworth(imagen_sin_ruido, D0=30, n=n)
+        img_filtrada_sin, filtro_H = paso_altas_butterworth(imagen_sin_ruido, D0=50, n=n)
         
         axes2[0, idx].imshow(filtro_H, cmap='gray')
-        axes2[0, idx].set_title(f'Filtro H(u,v)\nD0=30, n={n}')
+        axes2[0, idx].set_title(f'Filtro H(u,v)\nD0=50, n={n}')
         axes2[0, idx].axis('off')
         
         axes2[1, idx].imshow(img_filtrada_sin, cmap='gray')
@@ -277,14 +277,14 @@ def ejercicio2b_paso_altas(imagen_sin_ruido, imagen_con_ruido, tipo):
     plt.show()
 
     fig2, axes2 = plt.subplots(2, 3, figsize=(16, 12))
-    fig2.suptitle(f'Filtro Paso Altas Butterworth - Variando n (D0=30) Con Ruido {tipo}', 
+    fig2.suptitle(f'Filtro Paso Altas Butterworth - Variando n (D0=50) Con Ruido {tipo}', 
                   fontsize=12, fontweight='bold')
     
     for idx, n in enumerate(valores_n):
-        img_filtrada_con, filtro_H = paso_altas_butterworth(imagen_con_ruido, D0=30, n=n)
+        img_filtrada_con, filtro_H = paso_altas_butterworth(imagen_con_ruido, D0=50, n=n)
         
         axes2[0, idx].imshow(filtro_H, cmap='gray')
-        axes2[0, idx].set_title(f'Filtro H(u,v)\nD0=30, n={n}')
+        axes2[0, idx].set_title(f'Filtro H(u,v)\nD0=50, n={n}')
         axes2[0, idx].axis('off')
         
         axes2[1, idx].imshow(img_filtrada_con, cmap='gray')
