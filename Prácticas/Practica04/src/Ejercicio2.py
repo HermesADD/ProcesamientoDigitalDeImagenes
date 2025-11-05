@@ -288,7 +288,7 @@ def ejercicio2b_paso_altas(imagen_sin_ruido, imagen_con_ruido, tipo):
         axes2[0, idx].axis('off')
         
         axes2[1, idx].imshow(img_filtrada_con, cmap='gray')
-        axes2[1, idx].set_title(f'Sin ruido\nn={n}')
+        axes2[1, idx].set_title(f'Con ruido\nn={n}')
         axes2[1, idx].axis('off')
     
     plt.tight_layout()
