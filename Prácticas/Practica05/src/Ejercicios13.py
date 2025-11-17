@@ -7,6 +7,7 @@ Dependencias:
     - numpy
     - matplotlib.pyplot
     - skimage.io
+    - scipy.fft
 """
 
 import numpy as np
@@ -234,7 +235,6 @@ def filtroMedianaAdaptativo(imagen, smax):
     
     return np.clip(resultado, 0, 255).astype(np.uint8)
 
-
 def probar_filtros():
     """
     Función para probar todos los filtros implementados.
@@ -333,4 +333,5 @@ def probar_filtros():
 # Ejecutar pruebas si se ejecuta directamente
 if __name__ == "__main__":
     probar_filtros()
+    
     
