@@ -18,6 +18,18 @@ from skimage import io
 # =====================================
 
 def ruidoSalPimienta(imagen, pa, pb):
+    """
+    Aplica ruido de sal y pimienta a una imagen.
+    
+    Args:
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+        pa (float): Probabilidad de ruido tipo pimienta (píxeles negros), valor entre 0 y 1
+        pb (float): Probabilidad de ruido tipo sal (píxeles blancos), valor entre 0 y 1
+    
+    Returns:
+        np.ndarray: Imagen con ruido de sal y pimienta aplicado (tipo uint8)
+    """
+    
     imagen_ruidosa = imagen.copy().astype(np.float64)
     
     num_pimienta = int(pa * imagen.size)
@@ -31,6 +43,18 @@ def ruidoSalPimienta(imagen, pa, pb):
     return imagen_ruidosa.astype(np.uint8)
 
 def ruidoGaussiano(imagen, media, desviacion_estandar):
+    """
+    Aplica ruido gaussiano aditivo a una imagen.
+    
+    Args:
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+        media (float): Media de la distribución gaussiana (típicamente 0)
+        desviacion_estandar (float): Desviación estándar del ruido
+    
+    Returns:
+        np.ndarray: Imagen con ruido gaussiano aplicado (tipo uint8)
+    """
+    
     imagen_float = imagen.astype(np.float64)
     ruido = np.random.normal(media, desviacion_estandar, imagen.shape)
     imagen_ruidosa = imagen_float + ruido
@@ -42,6 +66,16 @@ def ruidoGaussiano(imagen, media, desviacion_estandar):
 # =====================================
 
 def convolucionAritmetica(n, vecinos):
+    """
+    Calcula el promedio aritmético de un conjunto de valores.
+    
+    Args:
+        n (int): Número total de elementos en el vecindario
+        vecinos (np.ndarray): Array con los valores de los píxeles vecinos
+    
+    Returns:
+        float: Promedio aritmético de los valores
+    """
     suma = 0.0
     for v in vecinos:
         suma += float(v)
@@ -49,6 +83,16 @@ def convolucionAritmetica(n, vecinos):
     return promedio
 
 def filtroAritmetico(orden, imagen):
+    """
+    Aplica un filtro de promedio aritmético a una imagen.
+    
+    Args:
+        orden (int): Tamaño de la ventana del filtro (debe ser impar, ej: 3, 5, 7)
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+    
+    Returns:
+        np.ndarray: Imagen filtrada (tipo uint8)
+    """
     filas, columnas = imagen.shape
     pad = orden // 2
     
@@ -70,6 +114,16 @@ def filtroAritmetico(orden, imagen):
 # =====================================
 
 def convolucionGeometrica(n, vecinos):
+    """
+    Calcula el promedio geométrico de un conjunto de valores.
+    
+    Args:
+        n (int): Número total de elementos en el vecindario
+        vecinos (np.ndarray): Array con los valores de los píxeles vecinos
+    
+    Returns:
+        float: Promedio geométrico de los valores
+    """
     producto = 1.0
     
     for v in vecinos:
@@ -82,6 +136,16 @@ def convolucionGeometrica(n, vecinos):
     return resultado
 
 def filtroGeometrico(orden, imagen):
+    """
+    Aplica un filtro de promedio geométrico a una imagen.
+    
+    Args:
+        orden (int): Tamaño de la ventana del filtro (debe ser impar, ej: 3, 5, 7)
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+    
+    Returns:
+        np.ndarray: Imagen filtrada (tipo uint8)
+    """
     filas, columnas = imagen.shape
     pad = orden // 2
     
@@ -103,42 +167,73 @@ def filtroGeometrico(orden, imagen):
 # =====================================
 
 def mediaLocal(vecinos):
+    """
+    Calcula la media local de un vecindario de píxeles.
+    
+    Args:
+        vecinos (np.ndarray): Array con los valores de los píxeles vecinos
+    
+    Returns:
+        float: Media de los valores del vecindario
+    """
     return np.mean(vecinos)
 
 def varianzaLocal(vecinos):
+    """
+    Calcula la varianza local de un vecindario de píxeles.
+    
+    Args:
+        vecinos (np.ndarray): Array con los valores de los píxeles vecinos
+    
+    Returns:
+        float: Varianza de los valores del vecindario
+    """
     return np.var(vecinos)
 
 def varianzaGeneral(imagen):
+    """
+    Calcula la varianza global de toda la imagen.
+    
+    Args:
+        imagen (np.ndarray): Imagen completa en escala de grises
+    
+    Returns:
+        float: Varianza de toda la imagen
+    """
     return np.var(imagen)
 
 def filtroAdaptativo(orden, imagen):
+    """
+    Aplica un filtro adaptativo de reducción de ruido.
+    
+    Args:
+        orden (int): Tamaño de la ventana del filtro (debe ser impar)
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+    
+    Returns:
+        np.ndarray: Imagen filtrada adaptativamente (tipo uint8)
+    """
     filas, cols = imagen.shape
     pad = orden // 2
     
-    # Agregar padding
     imagen_padded = np.pad(imagen.astype(np.float64), pad, mode='edge')
     resultado = np.zeros_like(imagen, dtype=np.float64)
     
     varianzaN = varianzaGeneral(imagen)
     
-    # Aplicar filtro
     for i in range(filas):
         for j in range(cols):
             # Extraer vecindad
             ventana = imagen_padded[i:i+orden, j:j+orden]
             vecinos = ventana.flatten()
             
-            # Calcular estadísticas locales
             mediaL = mediaLocal(vecinos)
             varianzaL = varianzaLocal(vecinos)
             
-            # Valor del píxel actual
             pixel = imagen_padded[i+pad, j+pad]
             
-            # Aplicar fórmula adaptativa
             if varianzaL != 0:
                 frac = varianzaN / varianzaL
-                # Limitar la fracción para evitar sobre-corrección
                 frac = min(frac, 1.0)
                 resta = pixel - mediaL
                 resultado[i, j] = pixel - (frac * resta)
@@ -152,6 +247,16 @@ def filtroAdaptativo(orden, imagen):
 # =====================================
 
 def filtroMediana(orden, imagen):
+    """
+    Aplica un filtro de mediana a una imagen.
+    
+    Args:
+        orden (int): Tamaño de la ventana del filtro (debe ser impar, ej: 3, 5, 7)
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+    
+    Returns:
+        np.ndarray: Imagen filtrada (tipo uint8)
+    """
     img_h, img_w = imagen.shape
     pad = orden // 2
 
@@ -176,6 +281,15 @@ def filtroMediana(orden, imagen):
 # =====================================
 
 def mediana_pixeles(pixeles):
+    """
+    Calcula la mediana de un conjunto de valores de píxeles.
+    
+    Args:
+        pixeles (list o np.ndarray): Lista de valores de píxeles
+    
+    Returns:
+        float: Valor de la mediana
+    """
     listaSort = sorted(pixeles)
     n = len(listaSort)
     
@@ -188,69 +302,102 @@ def mediana_pixeles(pixeles):
     return mediana
 
 def nivelA(zMed, zMax, zMin):
+    """
+    Calcula las diferencias para el Nivel A del filtro de mediana adaptativo.
+    Args:
+        zMed (float): Valor de la mediana del vecindario
+        zMax (float): Valor máximo del vecindario
+        zMin (float): Valor mínimo del vecindario
+    
+    Returns:
+        tuple: (A1, A2) donde:
+            - A1 = z_med - z_min
+            - A2 = z_med - z_max
+    """
     A1 = zMed - zMin
     A2 = zMed - zMax
     
     return A1, A2
 
 def nivelB(zXY, zMax, zMin):
+    """
+    Calcula las diferencias para el Nivel B del filtro de mediana adaptativo.
+    
+    Args:
+        zXY (float): Valor del píxel actual
+        zMax (float): Valor máximo del vecindario
+        zMin (float): Valor mínimo del vecindario
+    
+    Returns:
+        tuple: (B1, B2) donde:
+            - B1 = z_xy - z_min
+            - B2 = z_xy - z_max
+    """
     B1 = zXY - zMin
     B2 = zXY - zMax
     return B1, B2
 
 def filtroMedianaAdaptativo(imagen, smax):
+    """
+    Aplica un filtro de mediana adaptativo a una imagen.
+    
+    Este filtro mejora el filtro de mediana tradicional ajustando dinámicamente
+    el tamaño de la ventana. El algoritmo opera en dos niveles:
+    
+    Nivel A: Determina si la mediana es ruido
+        - Si la mediana NO es ruido → ir al Nivel B
+        - Si la mediana ES ruido → incrementar tamaño de ventana
+    
+    Nivel B: Determina si el píxel actual es ruido
+        - Si el píxel NO es ruido → mantener valor original
+        - Si el píxel ES ruido → reemplazar por la mediana
+    
+    Args:
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+        smax (int): Tamaño máximo permitido para la ventana (debe ser impar)
+    
+    Returns:
+        np.ndarray: Imagen filtrada adaptativamente (tipo uint8)
+    """
     filas, cols = imagen.shape
     resultado = np.zeros_like(imagen, dtype=np.float64)
     
-    # Agregar padding para el tamaño máximo
     pad_max = smax // 2
     imagen_padded = np.pad(imagen.astype(np.float64), pad_max, mode='edge')
     
     for i in range(filas):
         for j in range(cols):
-            # Coordenadas en imagen con padding
             pi = i + pad_max
             pj = j + pad_max
             
-            # Valor del píxel actual
             zXY = imagen_padded[pi, pj]
             
-            # Empezar con ventana de tamaño 3
             orden_actual = 3
             
             while orden_actual <= smax:
                 pad = orden_actual // 2
                 
-                # Extraer ventana actual
                 ventana = imagen_padded[pi-pad:pi+pad+1, pj-pad:pj+pad+1]
                 vecinos = ventana.flatten()
                 
-                # Calcular estadísticas
                 zMin = np.min(vecinos)
                 zMax = np.max(vecinos)
                 zMed = mediana_pixeles(vecinos)
                 
-                # NIVEL A
                 A1, A2 = nivelA(zMed, zMax, zMin)
                 
                 if A1 > 0 and A2 < 0:
-                    # z_med no es impulso, ir al nivel B
-                    # NIVEL B
                     B1, B2 = nivelB(zXY, zMax, zMin)
                     
                     if B1 > 0 and B2 < 0:
-                        # z_xy no es impulso
                         resultado[i, j] = zXY
                     else:
-                        # z_xy es impulso
                         resultado[i, j] = zMed
                     break
                 else:
-                    # z_med es impulso, incrementar ventana
                     orden_actual += 2
                     
                     if orden_actual > smax:
-                        # Alcanzó tamaño máximo
                         resultado[i, j] = zXY
                         break
     
@@ -260,7 +407,15 @@ def filtroMedianaAdaptativo(imagen, smax):
 # FILTRO PROMEDIO PONDERADO
 # =====================================
 def kernel_promedio_ponderado(tam):
+    """
+    Genera un kernel para filtro de promedio ponderado.
     
+    Args:
+        tam (int): Tamaño del kernel (debe ser impar, ej: 3, 5, 7)
+    
+    Returns:
+        np.ndarray: Kernel normalizado de tamaño tam x tam
+    """
     if tam == 3:
         kernel = np.array([[1, 2, 1],
                            [2, 4, 2],
@@ -284,6 +439,16 @@ def kernel_promedio_ponderado(tam):
     return kernel
 
 def convolucion(imagen, kernel):
+    """
+    Aplica una operación de convolución entre una imagen y un kernel.
+    
+    Args:
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+        kernel (np.ndarray): Kernel o máscara de convolución
+    
+    Returns:
+        np.ndarray: Resultado de la convolución
+    """
     img_h, img_w = imagen.shape
     kernel_h, kernel_w = kernel.shape
      
@@ -304,6 +469,16 @@ def convolucion(imagen, kernel):
     return resultado
 
 def filtro_promedio_ponderado(imagen, tam):
+    """
+    Aplica un filtro de promedio ponderado a una imagen.
+    
+    Args:
+        imagen (np.ndarray): Imagen de entrada en escala de grises
+        tam (int): Tamaño del kernel (debe ser impar)
+    
+    Returns:
+        np.ndarray: Imagen suavizada (tipo uint8)
+    """
     kernel = kernel_promedio_ponderado(tam)
     resultado = convolucion(imagen.astype(np.float64), kernel)
     return np.clip(resultado, 0, 255).astype(np.uint8)
@@ -312,146 +487,141 @@ def filtro_promedio_ponderado(imagen, tam):
 # FILTRO DE WIENER - CASO 1
 # =====================================
 
-def filtroWienerCaso1(imagen_degradada, varianza_ruido):
-    g = imagen_degradada.astype(np.float64)
-    filas, columnas = g.shape
+def filtroWienerCaso1(imagenOriginal, imagenDegradada):
+    """
+    Aplica el filtro de Wiener para el Caso 1: Ruido Aditivo.
     
-    G = np.fft.fft2(g)
+    Args:
+        imagenOriginal (np.ndarray): Imagen original
+        imagenDegradada (np.ndarray): Imagen con ruido 
+    Returns:
+        np.ndarray: Imagen restaurada (tipo uint8)
+    """
+    ruido_muestra = np.zeros_like(imagenOriginal, dtype=np.float64)
+    ruido = ruidoGaussiano(ruido_muestra, 0, 25)
     
-    S_gg = np.abs(G) ** 2
+    Snn = np.abs(np.fft.fft2(ruido))**2 
     
-    S_nn = varianza_ruido * filas * columnas
+    Sff = np.abs(np.fft.fft2(imagenOriginal))**2
     
-    S_ff = np.maximum(S_gg - S_nn, 1e-10)
+    denominador = Sff + Snn
+    epsilon = 1e-10
+    W = Sff / (denominador + epsilon)
     
-    W = S_ff / (S_ff + S_nn)
+    G = np.fft.fft2(imagenDegradada)
     
-    # Paso 6: Aplicar el filtro en frecuencia
-    F_restaurada = W * G
+    F_frecuencia = W * G
     
-    # Paso 7: Transformada inversa de Fourier
-    f_restaurada = np.fft.ifft2(F_restaurada)
-    f_restaurada = np.real(f_restaurada)
+    F_restaurada = np.abs(np.fft.ifft2(F_frecuencia))
     
-    # Paso 8: Clip y convertir a uint8
-    f_restaurada = np.clip(f_restaurada, 0, 255)
-    
-    return f_restaurada.astype(np.uint8)
+    return np.clip(F_restaurada, 0, 255).astype(np.uint8)
 
 # =====================================
 # FILTRO DE WIENER - CASO 2
 # =====================================
 
-def obtener_H(kernel, shape_imagen):
-    kernel = kernel / np.sum(kernel)
+def filtroWienerCaso2(imagenOriginal, imagenDegradada):
+    """
+    Aplica el filtro de Wiener para el Caso 2: Pérdida de Nitidez (sin ruido).
     
-    kh, kw = kernel.shape
+    Args:
+        imagenOriginal (np.ndarray): Imagen original 
+        imagenDegradada (np.ndarray): Imagen con pérdida de nitidez
     
-    # Padding del kernel al tamaño de la imagen
-    padded = np.zeros(shape_imagen, dtype=np.float64)
+    Returns:
+        np.ndarray: Imagen restaurada (tipo uint8)
+    """
+    F = np.fft.fft2(imagenOriginal)
+    G = np.fft.fft2(imagenDegradada)
     
-    # Colocar kernel en la esquina superior izquierda
-    padded[:kh, :kw] = kernel
+    epsilon = 1e-10
+    H = G / (F + epsilon)
     
-    # Hacer shift circular: mover el centro del kernel a (0,0)
-    padded = np.roll(padded, -kh // 2, axis=0)
-    padded = np.roll(padded, -kw // 2, axis=1)
+    W = 1 / (H + epsilon)
     
-    # FFT
-    H = np.fft.fft2(padded)
-    
-    return H
-
-def filtroWienerCaso2(imagen_degradada, kernel):
-    g = imagen_degradada.astype(np.float64)
-    G = np.fft.fft2(g)
-
-    H = obtener_H(kernel, g.shape)
-
-    # Evitar divisiones por cero
-    eps = 1e-6
-    H_seguro = np.where(np.abs(H) < eps, eps, H)
-
-    F_rest = G / H_seguro
-    f_rest = np.fft.ifft2(F_rest)
-    f_rest = np.real(f_rest)
-    f_rest = np.clip(f_rest, 0, 255)
-    return f_rest.astype(np.uint8)
+    F_estimada = W * G
+    F_restaurada = np.abs(np.fft.ifft2(F_estimada))
+    return np.clip(F_restaurada, 0, 255).astype(np.uint8)
 
 # =====================================
 # FILTRO DE WIENER - CASO 3
 # =====================================
-def filtroWienerCaso3(imagen_degradada, kernel, varianza_ruido):
-    g = imagen_degradada.astype(np.float64)
-    G = np.fft.fft2(g)
 
-    H = obtener_H(kernel, g.shape)
+def filtroWienerCaso3(imagenOriginal, imagenDegradada):
+    """
+    Aplica el filtro de Wiener para el Caso 3: Ruido + Pérdida de Nitidez .
     
-    eps = 1e-10
-    H_seguro = np.where(np.abs(H) < eps, eps, H)
+    Args:
+        imagenOriginal (np.ndarray): Imagen original 
+        imagenDegradada (np.ndarray): Imagen con ruido + pérdida de nitidez
     
-    S_gg = np.abs(G) ** 2
+    Returns:
+        np.ndarray: Imagen restaurada (tipo uint8)
+    """
+    F = np.fft.fft2(imagenOriginal)
+    G = np.fft.fft2(imagenDegradada)
     
-    filas, columnas = g.shape
-    S_nn = varianza_ruido * filas * columnas
+    Sff = np.abs(F)**2
     
-    H_abs2 = np.abs(H) ** 2
-    H_abs2_seguro = np.maximum(H_abs2, eps)
+    ruido_muestra = np.zeros_like(imagenOriginal, dtype=np.float64)
+    ruido = ruidoGaussiano(ruido_muestra, 0, 25)
     
-    S_ff_estimado = np.maximum((S_gg / H_abs2_seguro) - S_nn, eps)
+    N = np.fft.fft2(ruido)
+    Snn = np.abs(N)**2 
     
-    numerador = S_ff_estimado
-    denominador = H_seguro * (S_ff_estimado + S_nn)
+    epsilon = 1e-10
+    H = G / (F + N + epsilon)
     
-    denominador = np.where(np.abs(denominador) < eps, eps, denominador)
+    denominador = H * (Sff + Snn)
     
-    W = numerador / denominador
-    F_rest = W * G
+    W = Sff / (denominador + epsilon)
     
-    f_rest = np.fft.ifft2(F_rest)
-    f_rest = np.real(f_rest)
-    f_rest = np.clip(f_rest, 0, 255)
+    F_estimada = G * W
+    F_restaurada = np.abs(np.fft.ifft2(F_estimada))
     
-    return f_rest.astype(np.uint8)
-
+    return np.clip(F_restaurada, 0, 255).astype(np.uint8)
 # =====================================
 # FILTRO DE WIENER - CASO 4
 # =====================================
-def filtroWienerCaso4(imagen_degradada, kernel, varianza_ruido):
-    g = imagen_degradada.astype(np.float64)
-    G = np.fft.fft2(g)
+
+def filtroWienerCaso4(imagenOriginal, imagenDegradada):
+    """
+    Aplica el filtro de Wiener para el Caso 4: Pérdida de Nitidez + Ruido .
     
-    H = obtener_H(kernel, g.shape)
-    H_conj = np.conj(H)
-    H_abs2 = np.abs(H) ** 2
+    Args:
+        imagenOriginal (np.ndarray): Imagen original 
+        imagenDegradada (np.ndarray): Imagen con pérdida de nitidez + ruido
     
-    eps = 1e-10
-    H_abs2 = np.maximum(H_abs2, eps)
+    Returns:
+        np.ndarray: Imagen restaurada (tipo uint8)
+    """
+    F = np.fft.fft2(imagenOriginal)
+    G = np.fft.fft2(imagenDegradada)
     
-    S_gg = np.abs(G) ** 2
+    Sff = np.abs(F)**2
     
-    filas, columnas = g.shape
-    S_nn = varianza_ruido * filas * columnas
+    ruido_muestra = np.zeros_like(imagenOriginal, dtype=np.float64)
+    ruido = ruidoGaussiano(ruido_muestra, 0, 25)
     
-    S_ff = np.maximum(S_gg - S_nn, S_nn * 0.1)
+    N = np.fft.fft2(ruido)
+    Snn = np.abs(N)**2
     
-    numerador = H_conj * S_ff
-    denominador = H_abs2 * S_ff + S_nn
-    denominador = np.maximum(denominador, eps)
+    epsilon = 1e-10
+    H = (G - N) / (F + epsilon)
     
-    W = numerador / denominador
-    F_rest = W * G
+    H_conj = np.conj(H)       
+    H_mag2 = np.abs(H)**2     
     
-    f_rest = np.fft.ifft2(F_rest)
-    f_rest = np.real(f_rest)
+    numerador = Sff * H_conj
     
-    f_min, f_max = np.percentile(f_rest, [0.5, 99.5])
-    f_rest = np.clip(f_rest, f_min, f_max)
+    denominador = (H_mag2 * Sff) + Snn
     
-    if f_max > f_min:
-        f_rest = ((f_rest - f_min) / (f_max - f_min)) * 255
+    W = numerador / (denominador + epsilon)
     
-    return np.clip(f_rest, 0, 255).astype(np.uint8)
+    F_estimada = W * G
+    img_restaurada = np.abs(np.fft.ifft2(F_estimada))
+    
+    return np.clip(img_restaurada, 0, 255).astype(np.uint8)
 
 # =====================================
 # FUNCIONES AUXILIARES
@@ -586,142 +756,104 @@ def ejercicio4():
     print("="*60)
     
     imagen = cargarImagen('../imagenes/lenag.bmp')
-    
-    media = 0
-    desviacion_estandar = 50
-    varianza_ruido = desviacion_estandar ** 2
-    print("\n2. Agregando ruido gaussiano...")
-    imagen_ruidosa = ruidoGaussiano(imagen, media, desviacion_estandar)
-    
-    print("\n3. Aplicando filtro de Wiener (Caso 1)...")
-    imagen_restaurada = filtroWienerCaso1(imagen_ruidosa, varianza_ruido)
-    print("   Restauración completada")
-    
-    _, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes[0].imshow(imagen, cmap='gray', vmin=0, vmax=255)
-    axes[0].set_title('(a) Imagen Original\n(Lena)', fontsize=12)
+    imagenD = ruidoGaussiano(imagen, 0, 25) 
+    imagenR = filtroWienerCaso1(imagen, imagenD)
+    _, axes = plt.subplots(1, 3, figsize=(12, 12))
+    axes[0].imshow(imagen, cmap='gray')
+    axes[0].set_title('Original')
     axes[0].axis('off')
     
-    axes[1].imshow(imagen_ruidosa, cmap='gray', vmin=0, vmax=255)
-    axes[1].set_title(f'(b) Con Ruido Gaussiano', fontsize=12)
+    axes[1].imshow(imagenD, cmap='gray')
+    axes[1].set_title('Con Ruido')
     axes[1].axis('off')
     
-    axes[2].imshow(imagen_restaurada, cmap='gray', vmin=0, vmax=255)
-    axes[2].set_title(f'(c) Restaurada con Wiener\n' +
-                      f'Caso 1', fontsize=12)
+    axes[2].imshow(imagenR, cmap='gray')
+    axes[2].set_title('Restaurada')
     axes[2].axis('off')
     
     plt.tight_layout()
     plt.show()
-    
+   
 def ejercicio5():
     print("EJERCICIO 5: Filtro de Wiener - Caso 2 (Pérdida de nitidez)")
     print("="*60)
     
     imagen = cargarImagen('../imagenes/lenag.bmp')
     
-    kernel9 = kernel_promedio_ponderado(9)
-    imagen_borrosa = filtro_promedio_ponderado(imagen, 9)
+    imagenD = filtro_promedio_ponderado(imagen, 9) 
+    imagenR = filtroWienerCaso2(imagen, imagenD)
     
-    imagen_restaurada = filtroWienerCaso2(imagen_borrosa, kernel9)
-    
-    _, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes[0].imshow(imagen, cmap='gray', vmin=0, vmax=255)
-    axes[0].set_title('(a) Imagen Original (Lena)')
+    _, axes = plt.subplots(1, 3, figsize=(12, 12))
+    axes[0].imshow(imagen, cmap='gray')
+    axes[0].set_title('Original')
     axes[0].axis('off')
     
-    axes[1].imshow(imagen_borrosa, cmap='gray', vmin=0, vmax=255)
-    axes[1].set_title('(b) Degradada\n(Pérdida de nitidez 9x9)')
+    axes[1].imshow(imagenD, cmap='gray')
+    axes[1].set_title('Con Pérdida de Nitidez')
     axes[1].axis('off')
     
-    axes[2].imshow(imagen_restaurada, cmap='gray', vmin=0, vmax=255)
-    axes[2].set_title('(c) Restaurada con Wiener\nCaso 2')
+    axes[2].imshow(imagenR, cmap='gray')
+    axes[2].set_title('Restaurada')
     axes[2].axis('off')
     
     plt.tight_layout()
     plt.show()
     
 def ejercicio6():
-    print("EJERCICIO 6: Filtro de Wiener - Caso 3 (Ruido + Blur)")
+    print("EJERCICIO 6: Filtro de Wiener - Caso 3 (Ruido + PN)")
     print("="*60)
     
     imagen = cargarImagen('../imagenes/lenag.bmp')
+    imagenRuido = ruidoGaussiano(imagen, 0, 25)
+    imagenD = filtro_promedio_ponderado(imagenRuido, 9)
+    imagenR = filtroWienerCaso3(imagen, imagenD)
     
-    media = 0
-    desviacion_estandar = 20
-    varianza_ruido = desviacion_estandar ** 2
-    imagen_ruidosa = ruidoGaussiano(imagen, media, desviacion_estandar)
-    
-    kernel9 = kernel_promedio_ponderado(9)
-    imagen_degradada = filtro_promedio_ponderado(imagen_ruidosa, 9)
-    
-    imagen_restaurada = filtroWienerCaso3(imagen_degradada, kernel9, varianza_ruido)
-    
-    _, axes = plt.subplots(1, 4, figsize=(18, 5))
-    axes[0].imshow(imagen, cmap='gray', vmin=0, vmax=255)
-    axes[0].set_title('(a) Original')
+    _, axes = plt.subplots(1, 4, figsize=(12, 12))
+    axes[0].imshow(imagen, cmap='gray')
+    axes[0].set_title('Original')
     axes[0].axis('off')
     
-    axes[1].imshow(imagen_ruidosa, cmap='gray', vmin=0, vmax=255)
-    axes[1].set_title('(b) Solo Ruido Gaussiano')
+    axes[1].imshow(imagenRuido, cmap='gray')
+    axes[1].set_title('Con Ruido')
     axes[1].axis('off')
     
-    axes[2].imshow(imagen_degradada, cmap='gray', vmin=0, vmax=255)
-    axes[2].set_title('(c) Ruido + Blur 9x9')
+    axes[2].imshow(imagenD, cmap='gray')
+    axes[2].set_title('Con Ruido + Pérdida de Nitidez')
     axes[2].axis('off')
     
-    axes[3].imshow(imagen_restaurada, cmap='gray', vmin=0, vmax=255)
-    axes[3].set_title('(d) Restaurada con Wiener\nCaso 3')
+    axes[3].imshow(imagenR, cmap='gray')
+    axes[3].set_title('Restaurada')
     axes[3].axis('off')
     
     plt.tight_layout()
     plt.show()
     
 def ejercicio7():
-    print("EJERCICIO 7: Filtro de Wiener - Caso 4 (Blur + Ruido)")
+    print("EJERCICIO 7: Filtro de Wiener - Caso 4 (PN + Ruido)")
     print("="*60)
     
     imagen = cargarImagen('../imagenes/lenag.bmp')
+    imagenPN = filtro_promedio_ponderado(imagen, 9)
+    imagenD = ruidoGaussiano(imagenPN, 0, 25)
+    imagenR = filtroWienerCaso3(imagen, imagenD)
     
-    print("\n1. Aplicando pérdida de nitidez (filtro paso bajas 9x9)...")
-    kernel9 = kernel_promedio_ponderado(9)
-    imagen_borrosa = filtro_promedio_ponderado(imagen, 9)
-    
-    # 2) Luego agregar ruido gaussiano
-    print("\n2. Agregando ruido gaussiano...")
-    media = 0
-    desviacion_estandar = 20
-    varianza_ruido = desviacion_estandar ** 2
-    imagen_degradada = ruidoGaussiano(imagen_borrosa, media, desviacion_estandar)
-    
-    # 3) Restaurar con Wiener - Caso 4
-    print("\n3. Aplicando filtro de Wiener (Caso 4)...")
-    imagen_restaurada = filtroWienerCaso4(imagen_degradada, kernel9, varianza_ruido)
-    print("   Restauración completada")
-    
-    # 4) Mostrar resultados
-    _, axes = plt.subplots(1, 4, figsize=(18, 5))
-    
-    axes[0].imshow(imagen, cmap='gray', vmin=0, vmax=255)
-    axes[0].set_title('(a) Imagen Original\n(Lena)', fontsize=12)
+    _, axes = plt.subplots(1, 4, figsize=(12, 12))
+    axes[0].imshow(imagen, cmap='gray')
+    axes[0].set_title('Original')
     axes[0].axis('off')
     
-    axes[1].imshow(imagen_borrosa, cmap='gray', vmin=0, vmax=255)
-    axes[1].set_title('(b) Solo Pérdida de Nitidez\n(Blur 9x9)', fontsize=12)
+    axes[1].imshow(imagenPN, cmap='gray')
+    axes[1].set_title('Con Pérdida de Nitidez')
     axes[1].axis('off')
     
-    axes[2].imshow(imagen_degradada, cmap='gray', vmin=0, vmax=255)
-    axes[2].set_title('(c) Blur + Ruido Gaussiano\n(Imagen Degradada)', fontsize=12)
+    axes[2].imshow(imagenD, cmap='gray')
+    axes[2].set_title('Con Pérdida de Nitidez + Ruido')
     axes[2].axis('off')
     
-    axes[3].imshow(imagen_restaurada, cmap='gray', vmin=0, vmax=255)
-    axes[3].set_title('(d) Restaurada con Wiener\nCaso 4', fontsize=12)
+    axes[3].imshow(imagenR, cmap='gray')
+    axes[3].set_title('Restaurada')
     axes[3].axis('off')
     
     plt.tight_layout()
     plt.show()
-    
-    print("\n" + "="*60)
-    print("EJERCICIO 7 COMPLETADO")
-    print("="*60)
     
