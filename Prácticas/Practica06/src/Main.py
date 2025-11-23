@@ -6,6 +6,7 @@ Hermes Alberto Delgado Díaz
 """
 import os
 import sys
+import Auxiliar 
 import Ejercicios
 
 def limpiarPantalla():

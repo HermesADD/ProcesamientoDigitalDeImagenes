@@ -9,27 +9,69 @@ Dependencias:
     - skimage.io
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np 
+import matplotlib.pyplot as plt     
 from skimage import io
-
 
 # =====================================
 # FUNCIONES AUXILIARES
 # =====================================
-def cargarImagen(ruta_imagen):
-    print("Cargando imagen de prueba...")
+
+def cargarImagen(ruta_imagen: str) -> np.ndarray:
+    """
+    Carga una imagen ingresando su ruta.
+
+    Args:
+        ruta_imagen (str): Ruta de la imagen
+
+    Returns:
+        np.ndarray: Imagen localizada
+    """
+    print("Cargando imagen...")
     imagen = io.imread(ruta_imagen)
     print(f"Imagen cargada. Shape: {imagen.shape}, Dtype: {imagen.dtype}")
     return imagen
 
-def normalizar(imagen):
+def normalizar(imagen: np.ndarray) -> np.ndarray:
+    """
+    Normaliza una imagen con valores de intensidad entre [0,1]
+
+    Args:
+        imagen (np.ndarray): Imagen a normalizar
+
+    Returns:
+        np.ndarray: Imagen normalizada con rango [0,1]
+    """
     return imagen.astype(np.float64) / 255.0
 
-def desnormalizar(imagen):
+def desnormalizar(imagen: np.ndarray) -> np.ndarray:
+    """
+    Desnormaliza una imagen con valores de intensidad de [0,1] a [0,255]
+
+    Args:
+        imagen (np.ndarray): Imagen a desnormalizar
+
+    Returns:
+        np.ndarray: Imagen con rango de intensidad entre [0,255]
+    """
+    
     return np.clip(imagen * 255, 0, 255).astype(np.uint8)
 
-def histograma(imagen):
+def histograma(imagen: np.ndarray) -> np.ndarray:
+    """
+    Calcula el histograma de una imagen en escala de grises.
+    
+    El histograma representa la distribución de frecuencias de los niveles
+    de intensidad (0-255) presentes en la imagen.
+    
+    Args:
+        imagen (np.ndarray): Imagen en escala de grises como array de NumPy.
+                            Puede ser de cualquier tipo numérico.
+    
+    Returns:
+        dict: Diccionario donde las claves son niveles de intensidad (0-255)
+              y los valores son la frecuencia (cantidad de píxeles) de cada nivel.
+    """
     imagen256 = imagen.astype(np.uint8)
     histograma_dict = {i: 0 for i in range(256)}
     y, x = imagen.shape
@@ -38,7 +80,27 @@ def histograma(imagen):
             histograma_dict[imagen256[j][i]] += 1
     return histograma_dict
 
-def ecualizar_histograma(imagen):
+
+def ecualizar_histograma(imagen: np.ndarray) -> np.ndarray:
+    """
+    Ecualiza el histograma de una imagen para mejorar el contraste.
+    
+    La ecualización redistribuye las intensidades para que el histograma
+    sea aproximadamente uniforme, utilizando la función de distribución
+    acumulativa (CDF) como función de transformación.
+    
+    Proceso:
+    1. Calcular histograma normalizado (probabilidades)
+    2. Calcular CDF (suma acumulativa de probabilidades)
+    3. Escalar CDF al rango [0, 255]
+    4. Mapear cada píxel usando CDF como tabla de lookup
+    
+    Args:
+        imagen (np.ndarray): Imagen en escala de grises.
+    
+    Returns:
+        np.ndarray: Imagen con histograma ecualizado (uint8).
+    """
     es_normalizada = imagen.dtype in [np.float32, np.float64] and imagen.max() <= 1.0
     
     if es_normalizada:
@@ -52,24 +114,18 @@ def ecualizar_histograma(imagen):
     hist_dict = histograma(imagen_uint8)
     histo = np.array([hist_dict[i] for i in range(256)])
     
-    # Calcular probabilidades
     probabilidad = histo / total_pixeles
     
-    # Calcular CDF
     cdf = np.cumsum(probabilidad)
     
-    # Escalar CDF a rango [0, 255]
     cdf_escalado = (cdf * 255).astype(np.uint8)
     
-    # Mapear cada pixel usando el CDF
     imagen_ecualizada = cdf_escalado[imagen_uint8]
     
-    # Devolver en el mismo formato que la entrada
     if es_normalizada:
         return imagen_ecualizada.astype(np.float64) / 255.0
     else:
         return imagen_ecualizada
-    
     
 # =====================================
 # FUNCION RGB a HSI
@@ -78,11 +134,10 @@ def ecualizar_histograma(imagen):
 def rgb_a_hsi(imagen):
     img_norm = normalizar(imagen)
     
+    #Extracción de canales R, G, B
     r = img_norm[:,:,0]
     g = img_norm[:,:,1]
     b = img_norm[:,:,2]
-    
-    #Componente H
     
     num = 0.5 * ((r-g)+(r-b))
     dem = np.sqrt((r-g)**2 + (r-b)*(g-b))
@@ -111,11 +166,13 @@ def rgb_a_hsi(imagen):
 # FUNCIONES HSI a RGB
 # =====================================
 
-def hsi_a_rgb(H, S, I):
-    height, width = H.shape
-    r = np.zeros((height, width))
-    g = np.zeros((height, width))
-    b = np.zeros((height, width))
+def hsi_a_rgb(H,S,I):
+    altura, ancho = H.shape
+    
+    #Creación de canales R, G, B
+    r = np.zeros((altura, ancho))
+    g = np.zeros((altura, ancho))
+    b = np.zeros((altura, ancho))
     
     # Sector RG: 0° <= H < 120°
     sector_rg = (H >= 0) & (H < 120)
@@ -127,8 +184,8 @@ def hsi_a_rgb(H, S, I):
     
     # Sector GB: 120° <= H < 240°
     sector_gb = (H >= 120) & (H < 240)
-    H_adjusted = H[sector_gb] - 120
-    H_rad = np.radians(H_adjusted)
+    H_mod = H[sector_gb] - 120
+    H_rad = np.radians(H_mod)
     r[sector_gb] = I[sector_gb] * (1 - S[sector_gb])
     g[sector_gb] = I[sector_gb] * (1 + (S[sector_gb] * np.cos(H_rad)) / 
                                 np.cos(np.radians(60) - H_rad))
@@ -136,8 +193,8 @@ def hsi_a_rgb(H, S, I):
     
     # Sector BR: 240° <= H <= 360°
     sector_br = (H >= 240) & (H <= 360)
-    H_adjusted = H[sector_br] - 240
-    H_rad = np.radians(H_adjusted)
+    H_mod = H[sector_br] - 240
+    H_rad = np.radians(H_mod)
     g[sector_br] = I[sector_br] * (1 - S[sector_br])
     b[sector_br] = I[sector_br] * (1 + (S[sector_br] * np.cos(H_rad)) / 
                                 np.cos(np.radians(60) - H_rad))
@@ -148,83 +205,103 @@ def hsi_a_rgb(H, S, I):
     b = np.clip(b, 0, 1)
     
     imagen_rgb = np.stack([r, g, b], axis=2)
+    
     return desnormalizar(imagen_rgb)
-
 # =====================================
 # FUNCIONES PSEUDOCOLOR
 # =====================================
 
-def rebanado_intensidad(imagen, num_niveles):
+def colores(num_colores: int) -> np.ndarray:
     """
-    Representa una imagen en escala de grises en pseudocolor usando
-    el método de rebanado de intensidad.
+    Genera n colores distribuidos uniformemente en RGB.
     
     Args:
-        imagen: numpy array 2D en escala de grises (puede ser uint8 o normalizada)
-        num_niveles: número de niveles de color (P+1 intervalos)
+        num_colores (int): Número de colores a generar
     
     Returns:
-        imagen_pseudocolor: numpy array con shape (height, width, 3) en RGB
+        np.ndarray: Array de forma (num_colores, 3) con valores RGB en [0, 255]
     """
-    # Asegurar que la imagen esté en uint8 [0, 255]
-    if imagen.dtype in [np.float32, np.float64]:
-        imagen_gray = (imagen * 255).astype(np.uint8)
-    else:
-        imagen_gray = imagen.astype(np.uint8)
+    if num_colores <= 0:
+        return np.array([])
     
-    height, width = imagen_gray.shape
+    colores_rgb = []
     
-    # Crear imagen de pseudocolor
-    imagen_pseudocolor = np.zeros((height, width, 3), dtype=np.uint8)
-    
-    # Calcular los límites de los intervalos (planos de rebanado)
-    # Dividimos el rango [0, 255] en num_niveles intervalos
-    limites = np.linspace(0, 256, num_niveles + 1, dtype=int)
-    
-    # Generar colores distintivos para cada nivel
-    # Usamos el espacio de color HSV para obtener colores bien distribuidos
-    colores = []
-    for i in range(num_niveles):
-        # Distribuir el Hue uniformemente en el círculo de colores
-        hue = (i * 360.0) / num_niveles
+    for i in range(num_colores):
+        # Generar colores usando el espacio HSV para mejor distribución
+        hue = i / num_colores  # Distribuir uniformemente el matiz
         
-        # Convertir HSV a RGB (S=1, V=1 para colores saturados)
-        h_norm = hue / 360.0
+        # Convertir HSV a RGB (fórmula estándar)
+        h = hue * 6.0  # Escalar a [0, 6]
+        c = 1.0  # Chroma (saturación máxima)
+        x = c * (1 - abs((h % 2) - 1))
         
-        # Conversión HSV a RGB (caso simple con S=1, V=1)
-        sector = int(h_norm * 6)
-        f = (h_norm * 6) - sector
-        
-        if sector == 0:
-            r, g, b = 1, f, 0
-        elif sector == 1:
-            r, g, b = 1 - f, 1, 0
-        elif sector == 2:
-            r, g, b = 0, 1, f
-        elif sector == 3:
-            r, g, b = 0, 1 - f, 1
-        elif sector == 4:
-            r, g, b = f, 0, 1
+        if h < 1:
+            r, g, b = c, x, 0
+        elif h < 2:
+            r, g, b = x, c, 0
+        elif h < 3:
+            r, g, b = 0, c, x
+        elif h < 4:
+            r, g, b = 0, x, c
+        elif h < 5:
+            r, g, b = x, 0, c
         else:
-            r, g, b = 1, 0, 1 - f
+            r, g, b = c, 0, x
         
-        # Convertir a uint8
-        color_rgb = np.array([r * 255, g * 255, b * 255], dtype=np.uint8)
-        colores.append(color_rgb)
+        # Convertir a [0, 255]
+        colores_rgb.append([int(r * 255), int(g * 255), int(b * 255)])
+    
+    return np.array(colores_rgb, dtype=np.uint8)
+
+def pseudocolor(imagen: np.ndarray, num_colores: int) -> np.ndarray:
+    """
+    Asigna pseudocolores a una imagen en escala de grises dividiendo
+    el rango de intensidades en intervalos y asignando un color a cada uno.
+    
+    Args:
+        imagen (np.ndarray): Imagen en escala de grises (2D)
+        num_colores (int): Número de colores a utilizar
+    
+    Returns:
+        np.ndarray: Imagen en pseudocolor (RGB) con forma (altura, ancho, 3)
+    """
+    # Asegurar que la imagen está en uint8 [0, 255]
+    if imagen.dtype in [np.float32, np.float64]:
+        imagen_uint8 = (imagen * 255).astype(np.uint8)
+    else:
+        imagen_uint8 = imagen.astype(np.uint8)
+    
+    # Generar la paleta de colores
+    paleta = colores(num_colores)
+    
+    # Crear imagen RGB de salida
+    altura, ancho = imagen_uint8.shape
+    imagen_pseudocolor = np.zeros((altura, ancho, 3), dtype=np.uint8)
+    
+    # Dividir el rango [0, 255] en num_colores intervalos
+    tamaño_intervalo = 256 / num_colores
     
     # Asignar colores según el intervalo de intensidad
-    for k in range(num_niveles):
-        # Crear máscara para el k-ésimo intervalo V_k
-        if k == num_niveles - 1:
-            # Último intervalo incluye el límite superior
-            mascara = (imagen_gray >= limites[k]) & (imagen_gray <= limites[k + 1])
-        else:
-            mascara = (imagen_gray >= limites[k]) & (imagen_gray < limites[k + 1])
+    for i in range(num_colores):
+        # Definir límites del intervalo
+        limite_inferior = int(i * tamaño_intervalo)
+        limite_superior = int((i + 1) * tamaño_intervalo)
         
-        # Asignar el color c_k a todos los píxeles en el intervalo V_k
-        imagen_pseudocolor[mascara] = colores[k]
+        # Para el último intervalo, incluir 255
+        if i == num_colores - 1:
+            limite_superior = 256
+        
+        # Crear máscara para píxeles en este rango
+        mascara = (imagen_uint8 >= limite_inferior) & (imagen_uint8 < limite_superior)
+        
+        # Asignar el color correspondiente
+        imagen_pseudocolor[mascara] = paleta[i]
     
     return imagen_pseudocolor
+    
+# =====================================
+# FUNCIONES EJECUCIÓN
+# =====================================
 
 def ejercicio1():
     imagen =cargarImagen('../imagenes/flowers2.bmp')
@@ -262,7 +339,7 @@ def ejercicio1():
     
     plt.tight_layout()
     plt.show()
-    
+
 def ejercicio2():
     """
     Aplica pseudocolor a imágenes en escala de grises usando
@@ -273,48 +350,39 @@ def ejercicio2():
         '../imagenes/cadera.jpg',
         '../imagenes/mano.jpeg',
         '../imagenes/medtest.png',
-        '../imagenes/rodilla.jgp'
+        '../imagenes/rodilla.jpg'
     ]
     
     # Diferentes niveles de color a probar
-    niveles_color = [3, 4, 8, 16]
+    niveles_color = [4,8,12]
     
     for ruta in imagenes_rutas:
-        try:
-            print(f"\nProcesando: {ruta}")
-            imagen = cargarImagen(ruta)
-            
-            # Si la imagen es RGB, convertir a escala de grises
-            if len(imagen.shape) == 3:
+        imagen = cargarImagen(ruta)  
+        # Si la imagen es RGB, convertir a escala de grises
+        if len(imagen.shape) == 3:
                 # Conversión simple a escala de grises
-                imagen_gray = np.mean(imagen, axis=2).astype(np.uint8)
-            else:
-                imagen_gray = imagen
-            
-            # Crear figura para mostrar resultados
-            num_resultados = len(niveles_color) + 1
-            fig, axes = plt.subplots(1, num_resultados, figsize=(5 * num_resultados, 5))
-            
-            # Mostrar imagen original
-            axes[0].imshow(imagen_gray, cmap='gray')
-            axes[0].set_title('Original\n(Escala de grises)', fontsize=12, fontweight='bold')
-            axes[0].axis('off')
-            
-            # Aplicar pseudocolor con diferentes niveles
-            for i, num_niveles in enumerate(niveles_color):
-                print(f"  Aplicando pseudocolor con {num_niveles} niveles...")
-                imagen_pseudo = rebanado_intensidad(imagen_gray, num_niveles)
+            imagen_gray = np.mean(imagen, axis=2).astype(np.uint8)
+        else:
+            imagen_gray = imagen
                 
-                axes[i + 1].imshow(imagen_pseudo)
-                axes[i + 1].set_title(f'Pseudocolor\n{num_niveles} niveles', 
-                                     fontsize=12, fontweight='bold')
-                axes[i + 1].axis('off')
-            
-            plt.tight_layout()
-            plt.show()
-            
-        except FileNotFoundError:
-            print(f"  ⚠ Archivo no encontrado: {ruta}")
-            print(f"  Verifica la ruta de la imagen.")
-    
-    print("\n✓ Ejercicio 2 completado.")
+        # Crear figura para mostrar resultados
+        num_resultados = len(niveles_color) + 1
+        _, axes = plt.subplots(1, num_resultados, figsize=(5 * num_resultados, 5))
+                
+        # Mostrar imagen original
+        axes[0].imshow(imagen_gray, cmap='gray')
+        axes[0].set_title('Original\n(Escala de grises)', fontsize=12, fontweight='bold')
+        axes[0].axis('off')
+                
+        # Aplicar pseudocolor con diferentes niveles
+        for i, num_niveles in enumerate(niveles_color):
+            print(f"  Aplicando pseudocolor con {num_niveles} niveles...")
+            imagen_pseudo = pseudocolor(imagen_gray, num_niveles)
+                    
+            axes[i + 1].imshow(imagen_pseudo)
+            axes[i + 1].set_title(f'Pseudocolor\n{num_niveles} niveles', 
+                                        fontsize=12, fontweight='bold')
+            axes[i + 1].axis('off')
+                
+        plt.tight_layout()
+        plt.show()
