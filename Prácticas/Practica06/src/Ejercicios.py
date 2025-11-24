@@ -252,10 +252,10 @@ def colores(num_colores: int) -> np.ndarray:
     colores_rgb = []
     
     for i in range(num_colores):
-        # Generar colores usando el espacio HSV para mejor distribución
+        # Generar colores usando el espacio HSL para mejor distribución
         hue = i / num_colores  # Distribuir uniformemente el matiz
         
-        # Convertir HSV a RGB (fórmula estándar)
+        # Convertir HSL a RGB (fórmula estándar)
         h = hue * 6.0  # Escalar a [0, 6]
         c = 1.0  # Chroma (saturación máxima)
         x = c * (1 - abs((h % 2) - 1))
@@ -367,15 +367,15 @@ def ejercicio1():
     axes[0,0].axis('off')
     
     axes[0,1].imshow(imagenHSI)
-    axes[0,1].set_title('Imagen RGB -> HSI)', fontsize=14, fontweight='bold')
+    axes[0,1].set_title('Imagen RGB -> HSI', fontsize=14, fontweight='bold')
     axes[0,1].axis('off')
     
     axes[1,0].imshow(imagenRGB)
-    axes[1,0].set_title('Imagen HSI -> RGB)', fontsize=14, fontweight='bold')
+    axes[1,0].set_title('Imagen HSI -> RGB', fontsize=14, fontweight='bold')
     axes[1,0].axis('off')
     
     axes[1,1].imshow(imagen_realzada)
-    axes[1,1].set_title('Imagen HSI con I ecualizada -> RGB)', fontsize=14, fontweight='bold')
+    axes[1,1].set_title('Imagen HSI con I ecualizada -> RGB', fontsize=14, fontweight='bold')
     axes[1,1].axis('off')
     
     plt.tight_layout()
