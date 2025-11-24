@@ -131,7 +131,20 @@ def ecualizar_histograma(imagen: np.ndarray) -> np.ndarray:
 # FUNCION RGB a HSI
 # =====================================
 
-def rgb_a_hsi(imagen):
+def rgb_a_hsi(imagen: np.ndarray) -> tuple:
+    """
+    Convierte una imagen RGB al espacio de color HSI (Hue, Saturation, Intensity).
+    
+    Args:
+        imagen (np.ndarray): Imagen RGB con valores en rango [0, 255] o [0, 1].
+                            Shape esperado: (altura, ancho, 3)
+    
+    Returns:
+        tuple: Tupla con tres arrays de NumPy (H, S, I):
+            - H (np.ndarray): Componente de matiz en grados [0, 360°]
+            - S (np.ndarray): Componente de saturación normalizada [0, 1]
+            - I (np.ndarray): Componente de intensidad normalizada [0, 1]
+    """
     img_norm = normalizar(imagen)
     
     #Extracción de canales R, G, B
@@ -166,7 +179,19 @@ def rgb_a_hsi(imagen):
 # FUNCIONES HSI a RGB
 # =====================================
 
-def hsi_a_rgb(H,S,I):
+def hsi_a_rgb(H: np.ndarray,S: np.ndarray ,I: np.ndarray) -> np.ndarray:
+    """
+    Convierte una imagen del espacio de color HSI a RGB.
+    
+    Args:
+        H (np.ndarray): Componente de matiz en grados [0, 360°]
+        S (np.ndarray): Componente de saturación [0, 1]
+        I (np.ndarray): Componente de intensidad [0, 1]
+    
+    Returns:
+        np.ndarray: Imagen RGB con valores en rango [0, 255] tipo uint8.
+                   Shape: (altura, ancho, 3)
+    """
     altura, ancho = H.shape
     
     #Creación de canales R, G, B
@@ -304,6 +329,22 @@ def pseudocolor(imagen: np.ndarray, num_colores: int) -> np.ndarray:
 # =====================================
 
 def ejercicio1():
+    """
+    Ejercicio 1: Conversión RGB-HSI y realce mediante ecualización de intensidad.
+    
+    Realiza las siguientes operaciones:
+    1. Carga una imagen RGB (flowers2.bmp)
+    2. Convierte la imagen de RGB a HSI
+    3. Convierte de vuelta a RGB para verificar la transformación
+    4. Ecualiza la componente I (intensidad) para mejorar el contraste
+    5. Convierte la imagen con I ecualizada de vuelta a RGB
+    6. Muestra las 4 imágenes resultantes en una cuadrícula 2x2
+    
+    La ecualización de la componente I permite mejorar el contraste de la
+    imagen sin alterar la información de color (H y S), resultando en una
+    imagen con colores preservados pero mejor distribución de intensidades.
+    """
+    
     imagen =cargarImagen('../imagenes/flowers2.bmp')
     
     print("\n Convirtiendo RGB a HSI")
@@ -342,8 +383,13 @@ def ejercicio1():
 
 def ejercicio2():
     """
-    Aplica pseudocolor a imágenes en escala de grises usando
-    el método de rebanado de intensidad.
+    Ejercicio 2: Aplicación de pseudocolor a imágenes médicas.
+    
+    Proceso:
+    1. Carga imágenes médicas (radiografías, tomografías, etc.)
+    2. Convierte a escala de grises si es necesario
+    3. Aplica pseudocolor con diferentes números de niveles (4, 8, 12)
+    4. Muestra la imagen original y las versiones con pseudocolor
     """
     # Lista de imágenes a procesar (ajusta las rutas según tu estructura)
     imagenes_rutas = [
@@ -365,16 +411,13 @@ def ejercicio2():
         else:
             imagen_gray = imagen
                 
-        # Crear figura para mostrar resultados
         num_resultados = len(niveles_color) + 1
         _, axes = plt.subplots(1, num_resultados, figsize=(5 * num_resultados, 5))
                 
-        # Mostrar imagen original
         axes[0].imshow(imagen_gray, cmap='gray')
         axes[0].set_title('Original\n(Escala de grises)', fontsize=12, fontweight='bold')
         axes[0].axis('off')
                 
-        # Aplicar pseudocolor con diferentes niveles
         for i, num_niveles in enumerate(niveles_color):
             print(f"  Aplicando pseudocolor con {num_niveles} niveles...")
             imagen_pseudo = pseudocolor(imagen_gray, num_niveles)
