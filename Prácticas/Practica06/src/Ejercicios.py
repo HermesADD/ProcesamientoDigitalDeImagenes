@@ -257,7 +257,7 @@ def colores(num_colores: int) -> np.ndarray:
         
         # Convertir HSL a RGB (fórmula estándar)
         h = hue * 6.0  # Escalar a [0, 6]
-        c = 1.0  # Chroma (saturación máxima)
+        c = 1.0  # (saturación máxima)
         x = c * (1 - abs((h % 2) - 1))
         
         if h < 1:
